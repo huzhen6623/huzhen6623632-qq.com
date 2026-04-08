@@ -1,0 +1,2588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>热血传奇 - 网页版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* ==================== 登录界面 ==================== */
+        #loginScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        #loginScreen h1 {
+            font-size: 56px;
+            color: #e94560;
+            text-shadow: 0 0 20px #e94560, 0 0 40px #e94560, 0 0 60px #e94560;
+            margin-bottom: 20px;
+            letter-spacing: 10px;
+        }
+
+        .login-container {
+            background: rgba(0,0,0,0.65);
+            padding: 50px;
+            border-radius: 10px;
+            border: 2px solid #e94560;
+            box-shadow: 0 0 40px rgba(233, 69, 96, 0.4);
+            width: 500px;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background: #1a1a2e;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: #e94560;
+            box-shadow: 0 0 10px rgba(233, 69, 96, 0.3);
+        }
+
+        .profession-select {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            margin-top: 20px;
+        }
+
+        .profession-card {
+            flex: 1;
+            padding: 20px;
+            border: 2px solid #444;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .profession-card:hover {
+            border-color: #e94560;
+            background: rgba(233, 69, 96, 0.15);
+            transform: translateY(-3px);
+        }
+
+        .profession-card.selected {
+            border-color: #e94560;
+            background: rgba(233, 69, 96, 0.25);
+            box-shadow: 0 0 15px rgba(233, 69, 96, 0.3);
+        }
+
+        .profession-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .profession-card.warrior .profession-icon { color: #ff6b6b; }
+        .profession-card.mage .profession-icon { color: #4ecdc4; }
+        .profession-card.taoist .profession-icon { color: #95e1d3; }
+
+        .profession-name {
+            font-size: 18px;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+
+        .profession-desc {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #e94560, #c73e54);
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            font-weight: bold;
+            letter-spacing: 3px;
+            transition: all 0.3s;
+        }
+
+        .login-btn:hover {
+            background: linear-gradient(135deg, #ff6b6b, #e94560);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 25px rgba(233, 69, 96, 0.5);
+        }
+
+        /* ==================== 游戏界面 ==================== */
+        #gameScreen {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            flex-direction: column;
+            background: #0a0a0f;
+        }
+
+        /* 游戏画布区域 */
+        #gameCanvasContainer {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 底部UI区域 */
+        #bottomUI {
+            height: 120px;
+            background: url('https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=legend%20of%20mir%20ui%20bottom%20bar%20dark%20leather%20texture&image_size=landscape_16_9');
+            border-top: 3px solid #8b4513;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 15px;
+        }
+
+        /* 血条（左侧） */
+        .hp-bar-container {
+            width: 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .bar-bg {
+            width: 100%;
+            height: 25px;
+            background: #000;
+            border: 2px solid #8b4513;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .hp-fill {
+            background: linear-gradient(90deg, #8b0000, #ff4444, #8b0000);
+        }
+
+        .bar-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 1px 1px 2px #000;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* 蓝条（右侧） */
+        .mp-bar-container {
+            width: 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .mp-fill {
+            background: linear-gradient(90deg, #00008b, #4444ff, #00008b);
+        }
+
+        /* 中间药剂栏 */
+        .potions-container {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            width: 140px;
+            justify-content: center;
+        }
+
+        .potion-slot {
+            width: 40px;
+            height: 40px;
+            background: url('https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=legend%20of%20mir%20item%20slot%20golden%20frame&image_size=square');
+            background-size: cover;
+            border: 2px solid #ffd700;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 18px;
+        }
+
+        .potion-slot:hover {
+            border-color: #ff6b6b;
+            transform: scale(1.1);
+        }
+
+        /* 技能栏 */
+        .skills-container {
+            display: flex;
+            gap: 5px;
+        }
+
+        .skill-slot {
+            width: 40px;
+            height: 40px;
+            background: url('https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=legend%20of%20mir%20skill%20slot%20dark%20wooden%20frame&image_size=square');
+            background-size: cover;
+            border: 2px solid #8b4513;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .skill-slot:hover {
+            border-color: #ffd700;
+            transform: scale(1.1);
+        }
+
+        .skill-slot .skill-icon {
+            font-size: 20px;
+        }
+
+        .skill-slot .skill-key {
+            position: absolute;
+            bottom: 2px;
+            right: 3px;
+            font-size: 9px;
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        /* 聊天对话框 */
+        .chat-container {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            border-left: 2px solid #8b4513;
+            border-right: 2px solid #8b4513;
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            font-size: 11px;
+            line-height: 1.4;
+            font-family: 'Courier New', monospace;
+        }
+
+        .chat-message {
+            margin-bottom: 2px;
+        }
+
+        .chat-message.system { color: #ffd700; }
+        .chat-message.combat { color: #ff6b6b; }
+        .chat-message.loot { color: #4ecdc4; }
+        .chat-message.normal { color: #aaa; }
+
+        .chat-input-area {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 4px 8px;
+            border: 1px solid #8b4513;
+            border-radius: 2px;
+            background: #0a0a0f;
+            color: #fff;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #ffd700;
+        }
+
+        .chat-send-btn {
+            padding: 4px 10px;
+            background: linear-gradient(135deg, #8b4513, #a0522d);
+            border: 1px solid #ffd700;
+            border-radius: 2px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* ==================== 弹窗界面 ==================== */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-window {
+            background: url('https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=legend%20of%20mir%20ui%20panel%20dark%20leather%20texture&image_size=square');
+            background-size: cover;
+            border: 3px solid #8b4513;
+            border-radius: 4px;
+            padding: 20px;
+            min-width: 450px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #8b4513;
+            padding-bottom: 10px;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            color: #ffd700;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        .modal-close {
+            width: 25px;
+            height: 25px;
+            background: #8b4513;
+            border: 1px solid #ffd700;
+            border-radius: 2px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .modal-close:hover {
+            background: #a0522d;
+        }
+
+        /* ==================== 装备界面 ==================== */
+        .equipment-preview {
+            display: flex;
+            gap: 30px;
+        }
+
+        .character-model {
+            width: 150px;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #8b4513;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .character-sprite {
+            font-size: 80px;
+            margin-bottom: 10px;
+        }
+
+        .character-name {
+            color: #ffd700;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        .character-level {
+            color: #ccc;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .equipment-slots {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            flex: 1;
+        }
+
+        .equip-slot {
+            aspect-ratio: 1;
+            background: url('https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=legend%20of%20mir%20equipment%20slot%20golden%20frame&image_size=square');
+            background-size: cover;
+            border: 2px solid #8b4513;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .equip-slot:hover {
+            border-color: #ffd700;
+            transform: scale(1.05);
+        }
+
+        .equip-slot.equipped {
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .equip-slot .slot-icon {
+            font-size: 24px;
+        }
+
+        .equip-slot .slot-name {
+            font-size: 10px;
+            color: #ccc;
+            margin-top: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* ==================== 技能界面 ==================== */
+        .skills-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .skill-item {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #8b4513;
+            border-radius: 4px;
+            padding: 12px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .skill-item:hover {
+            border-color: #ffd700;
+        }
+
+        .skill-item.learned {
+            border-color: #4ecdc4;
+            box-shadow: 0 0 8px rgba(78, 205, 196, 0.3);
+        }
+
+        .skill-item-icon {
+            font-size: 32px;
+        }
+
+        .skill-item-info {
+            flex: 1;
+        }
+
+        .skill-item-name {
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .skill-item-desc {
+            color: #ccc;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .skill-item-level {
+            color: #4ecdc4;
+            font-size: 10px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* ==================== 状态界面 ==================== */
+        .status-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .status-item {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #8b4513;
+            border-radius: 4px;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-label {
+            color: #ccc;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .status-value {
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* ==================== 地图信息 ==================== */
+        .map-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.85);
+            padding: 8px 12px;
+            border-radius: 3px;
+            border: 2px solid #8b4513;
+        }
+
+        .map-info h4 {
+            color: #ffd700;
+            font-size: 12px;
+            margin-bottom: 3px;
+            font-family: 'Courier New', monospace;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        .map-info p {
+            color: #ccc;
+            font-size: 10px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* ==================== 小地图 ==================== */
+        .minimap {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 180px;
+            height: 180px;
+            background: url('https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=legend%20of%20mir%20minimap%20background%20vintage%20style&image_size=square');
+            background-size: cover;
+            border: 3px solid #8b4513;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(139, 69, 19, 0.5);
+        }
+
+        /* 小地图标题 */
+        .minimap-title {
+            position: absolute;
+            top: -25px;
+            right: 0;
+            background: #8b4513;
+            color: #ffd700;
+            padding: 3px 10px;
+            border: 1px solid #ffd700;
+            border-radius: 3px 3px 0 0;
+            font-size: 10px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+
+        /* ==================== 浮动提示 ==================== */
+        .float-text {
+            position: absolute;
+            font-weight: bold;
+            font-size: 16px;
+            pointer-events: none;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+            z-index: 100;
+            animation: floatUp 1.2s ease-out forwards;
+            font-family: 'Courier New', monospace;
+        }
+
+        .float-text.critical {
+            font-size: 20px;
+            color: #ff0000;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        .float-text.heal {
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .float-text.normal {
+            color: #fff;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            50% { opacity: 1; transform: translateY(-30px) scale(1.1); }
+            100% { opacity: 0; transform: translateY(-60px) scale(1.2); }
+        }
+
+        /* 伤害数字动画 */
+        @keyframes floatUpCritical {
+            0% { opacity: 1; transform: translateY(0) scale(1.5); }
+            25% { transform: translateY(-15px) scale(1.8); }
+            50% { opacity: 1; transform: translateY(-30px) scale(1.5); }
+            100% { opacity: 0; transform: translateY(-60px) scale(1.2); }
+        }
+
+        /* ==================== 操作提示 ==================== */
+        .key-hints {
+            position: absolute;
+            bottom: 170px;
+            right: 20px;
+            background: rgba(0,0,0,0.6);
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 1px solid #333;
+            font-size: 11px;
+            color: #888;
+        }
+
+        .key-hints .key {
+            display: inline-block;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 3px;
+            padding: 2px 6px;
+            margin: 0 2px;
+            color: #fff;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录界面 -->
+    <div id="loginScreen">
+        <h1>⚔️ 热血传奇 ⚔️</h1>
+        <div class="login-container">
+            <input type="text" class="login-input" id="username" placeholder="请输入角色名" maxlength="12">
+            <div class="profession-select">
+                <div class="profession-card warrior selected" data-prof="warrior">
+                    <div class="profession-icon">⚔️</div>
+                    <div class="profession-name">战士</div>
+                    <div class="profession-desc">高攻高防<br>近战王者</div>
+                </div>
+                <div class="profession-card mage" data-prof="mage">
+                    <div class="profession-icon">🔮</div>
+                    <div class="profession-name">法师</div>
+                    <div class="profession-desc">魔法精通<br>群攻高手</div>
+                </div>
+                <div class="profession-card taoist" data-prof="taoist">
+                    <div class="profession-icon">📿</div>
+                    <div class="profession-name">道士</div>
+                    <div class="profession-desc">召唤辅助<br>全能型</div>
+                </div>
+            </div>
+            <button class="login-btn" id="startGameBtn">开始游戏</button>
+        </div>
+    </div>
+
+    <!-- 游戏界面 -->
+    <div id="gameScreen">
+        <div id="gameCanvasContainer">
+            <canvas id="gameCanvas"></canvas>
+            <div class="map-info">
+                <h4 id="mapName">玛法大陆</h4>
+                <p>坐标: <span id="playerPos">0, 0</span> | 等级: <span id="playerLevel">1</span></p>
+            </div>
+            <div class="minimap">
+                <div class="minimap-title">地图</div>
+                <canvas id="minimapCanvas" width="174" height="174"></canvas>
+            </div>
+            <div class="key-hints">
+                <span class="key">右键</span>移动 | 
+                <span class="key">左键</span>攻击 | 
+                <span class="key">F1-F8</span>技能 | 
+                <span class="key">F9</span>装备 | 
+                <span class="key">F10</span>技能 | 
+                <span class="key">F11</span>状态
+            </div>
+        </div>
+
+        <div id="bottomUI">
+            <!-- 血条 -->
+            <div class="hp-bar-container">
+                <div style="color: #ff4444; font-weight: bold; font-size: 12px; text-align: center;">生命值</div>
+                <div class="bar-bg">
+                    <div class="bar-fill hp-fill" id="hpBar" style="width: 100%;"></div>
+                    <div class="bar-text" id="hpText">100/100</div>
+                </div>
+            </div>
+
+            <!-- 药剂栏 -->
+            <div class="potions-container">
+                <div class="potion-slot" title="生命药水">🧪</div>
+                <div class="potion-slot" title="魔法药水">💧</div>
+                <div class="potion-slot" title="强效生命">❤️</div>
+                <div class="potion-slot" title="太阳水">☀️</div>
+                <div class="potion-slot" title="万年雪霜">❄️</div>
+                <div class="potion-slot" title="金疮药">🩹</div>
+            </div>
+
+            <!-- 技能栏 -->
+            <div class="skills-container">
+                <div class="skill-slot" title="普通攻击">
+                    <span class="skill-icon">⚔️</span>
+                    <span class="skill-key">左键</span>
+                </div>
+                <div class="skill-slot" title="基本剑术">
+                    <span class="skill-icon">⚡</span>
+                    <span class="skill-key">F1</span>
+                </div>
+                <div class="skill-slot" title="攻杀剑术">
+                    <span class="skill-icon">🔥</span>
+                    <span class="skill-key">F2</span>
+                </div>
+                <div class="skill-slot" title="刺杀剑术">
+                    <span class="skill-icon">🗡️</span>
+                    <span class="skill-key">F3</span>
+                </div>
+                <div class="skill-slot" title="半月弯刀">
+                    <span class="skill-icon">🌙</span>
+                    <span class="skill-key">F4</span>
+                </div>
+                <div class="skill-slot" title="烈火剑法">
+                    <span class="skill-icon">💥</span>
+                    <span class="skill-key">F5</span>
+                </div>
+                <div class="skill-slot" title="野蛮冲撞">
+                    <span class="skill-icon">💨</span>
+                    <span class="skill-key">F6</span>
+                </div>
+            </div>
+
+            <!-- 聊天框 -->
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-message system">欢迎来到热血传奇！</div>
+                    <div class="chat-message system">鼠标右键移动，左键攻击</div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="输入消息...">
+                    <button class="chat-send-btn" onclick="sendChat()">发送</button>
+                </div>
+            </div>
+
+            <!-- 蓝条 -->
+            <div class="mp-bar-container">
+                <div style="color: #4444ff; font-weight: bold; font-size: 12px; text-align: center;">魔法值</div>
+                <div class="bar-bg">
+                    <div class="bar-fill mp-fill" id="mpBar" style="width: 100%;"></div>
+                    <div class="bar-text" id="mpText">50/50</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 装备界面 -->
+    <div class="modal" id="equipmentModal">
+        <div class="modal-window">
+            <div class="modal-header">
+                <span class="modal-title">🎽 装备界面</span>
+                <button class="modal-close" onclick="closeModal('equipmentModal')">×</button>
+            </div>
+            <div class="equipment-preview">
+                <div class="character-model">
+                    <div class="character-sprite" id="equipCharIcon">⚔️</div>
+                    <div class="character-name" id="equipCharName">玩家</div>
+                    <div class="character-level" id="equipCharLevel">Lv.1 战士</div>
+                </div>
+                <div class="equipment-slots">
+                    <div class="equip-slot" data-slot="helmet">
+                        <span class="slot-icon">🪖</span>
+                        <span class="slot-name">头盔</span>
+                    </div>
+                    <div class="equip-slot" data-slot="armor">
+                        <span class="slot-icon">👕</span>
+                        <span class="slot-name">衣服</span>
+                    </div>
+                    <div class="equip-slot" data-slot="weapon">
+                        <span class="slot-icon">⚔️</span>
+                        <span class="slot-name">武器</span>
+                    </div>
+                    <div class="equip-slot" data-slot="necklace">
+                        <span class="slot-icon">📿</span>
+                        <span class="slot-name">项链</span>
+                    </div>
+                    <div class="equip-slot" data-slot="ring1">
+                        <span class="slot-icon">💍</span>
+                        <span class="slot-name">戒指1</span>
+                    </div>
+                    <div class="equip-slot" data-slot="ring2">
+                        <span class="slot-icon">💍</span>
+                        <span class="slot-name">戒指2</span>
+                    </div>
+                    <div class="equip-slot" data-slot="shoes">
+                        <span class="slot-icon">👢</span>
+                        <span class="slot-name">鞋子</span>
+                    </div>
+                    <div class="equip-slot" data-slot="bracelet1">
+                        <span class="slot-icon">📿</span>
+                        <span class="slot-name">手镯1</span>
+                    </div>
+                    <div class="equip-slot" data-slot="bracelet2">
+                        <span class="slot-icon">📿</span>
+                        <span class="slot-name">手镯2</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 技能界面 -->
+    <div class="modal" id="skillModal">
+        <div class="modal-window">
+            <div class="modal-header">
+                <span class="modal-title">📚 技能界面</span>
+                <button class="modal-close" onclick="closeModal('skillModal')">×</button>
+            </div>
+            <div class="skills-list" id="skillsList">
+                <div class="skill-item learned">
+                    <span class="skill-item-icon">⚡</span>
+                    <div class="skill-item-info">
+                        <div class="skill-item-name">基本剑术</div>
+                        <div class="skill-item-desc">提升攻击准确率</div>
+                        <div class="skill-item-level">Lv.3 (2500/3000)</div>
+                    </div>
+                </div>
+                <div class="skill-item learned">
+                    <span class="skill-item-icon">🔥</span>
+                    <div class="skill-item-info">
+                        <div class="skill-item-name">攻杀剑术</div>
+                        <div class="skill-item-desc">有几率触发额外伤害</div>
+                        <div class="skill-item-level">Lv.2 (800/1500)</div>
+                    </div>
+                </div>
+                <div class="skill-item">
+                    <span class="skill-item-icon">🗡️</span>
+                    <div class="skill-item-info">
+                        <div class="skill-item-name">刺杀剑术</div>
+                        <div class="skill-item-desc">隔位攻击，无视防御</div>
+                        <div class="skill-item-level">未学习</div>
+                    </div>
+                </div>
+                <div class="skill-item">
+                    <span class="skill-item-icon">🌙</span>
+                    <div class="skill-item-info">
+                        <div class="skill-item-name">半月弯刀</div>
+                        <div class="skill-item-desc">范围攻击，最多攻击4个目标</div>
+                        <div class="skill-item-level">未学习</div>
+                    </div>
+                </div>
+                <div class="skill-item">
+                    <span class="skill-item-icon">💥</span>
+                    <div class="skill-item-info">
+                        <div class="skill-item-name">烈火剑法</div>
+                        <div class="skill-item-desc">召唤烈火，造成2.5倍伤害</div>
+                        <div class="skill-item-level">未学习</div>
+                    </div>
+                </div>
+                <div class="skill-item">
+                    <span class="skill-item-icon">💨</span>
+                    <div class="skill-item-info">
+                        <div class="skill-item-name">野蛮冲撞</div>
+                        <div class="skill-item-desc">冲撞目标，将其推开</div>
+                        <div class="skill-item-level">未学习</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 状态界面 -->
+    <div class="modal" id="statusModal">
+        <div class="modal-window">
+            <div class="modal-header">
+                <span class="modal-title">📊 状态界面</span>
+                <button class="modal-close" onclick="closeModal('statusModal')">×</button>
+            </div>
+            <div class="status-container">
+                <div class="status-item">
+                    <span class="status-label">角色名</span>
+                    <span class="status-value" id="statusName">玩家</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">职业</span>
+                    <span class="status-value" id="statusProf">战士</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">等级</span>
+                    <span class="status-value" id="statusLevel">1</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">生命值</span>
+                    <span class="status-value" id="statusHP">100/100</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">魔法值</span>
+                    <span class="status-value" id="statusMP">50/50</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">经验值</span>
+                    <span class="status-value" id="statusEXP">0/100</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">物理攻击</span>
+                    <span class="status-value" id="statusATK">10-15</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">魔法攻击</span>
+                    <span class="status-value" id="statusMATK">0-0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">物理防御</span>
+                    <span class="status-value" id="statusDEF">5-8</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">魔法防御</span>
+                    <span class="status-value" id="statusMDEF">3-5</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">准确</span>
+                    <span class="status-value" id="statusACC">10</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">敏捷</span>
+                    <span class="status-value" id="statusAGI">8</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 游戏配置 ====================
+        const CONFIG = {
+            TILE_WIDTH: 64,
+            TILE_HEIGHT: 32,
+            MAP_WIDTH: 80,
+            MAP_HEIGHT: 80,
+            FPS: 60,
+            WALK_SPEED: 3.5,
+            ANIMATION_SPEED: 120,
+            PROFESSIONS: {
+                warrior: { 
+                    name: '战士', 
+                    hp: 150, 
+                    mp: 50, 
+                    minAtk: 10, 
+                    maxAtk: 15,
+                    minDef: 5, 
+                    maxDef: 8,
+                    acc: 10,
+                    agi: 8,
+                    icon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20warrior%20character%20fantasy%20armor%20realistic%203D%20render&image_size=square',
+                    color: '#ff6b6b',
+                    sprite: {
+                        idle: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20warrior%20idle%20stance%20fantasy%20armor%20realistic%203D%20render&image_size=square',
+                        walk: [
+                            'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20warrior%20walking%20frame1%20fantasy%20armor%20realistic%203D%20render&image_size=square',
+                            'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20warrior%20walking%20frame2%20fantasy%20armor%20realistic%203D%20render&image_size=square',
+                            'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20warrior%20walking%20frame3%20fantasy%20armor%20realistic%203D%20render&image_size=square',
+                            'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20warrior%20walking%20frame4%20fantasy%20armor%20realistic%203D%20render&image_size=square'
+                        ]
+                    }
+                },
+                mage: { 
+                    name: '法师', 
+                    hp: 80, 
+                    mp: 150, 
+                    minAtk: 3, 
+                    maxAtk: 5,
+                    minDef: 2, 
+                    maxDef: 4,
+                    acc: 8,
+                    agi: 10,
+                    icon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20mage%20character%20fantasy%20robes%20realistic%203D%20render&image_size=square',
+                    color: '#4ecdc4',
+                    sprite: {
+                        idle: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20mage%20idle%20stance%20fantasy%20robes%20realistic%203D%20render&image_size=square',
+                        walk: [
+                            'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20mage%20walking%20frame1%20fantasy%20robes%20realistic%203D%20render&image_size=square',
+                            'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20mage%20walking%20frame2%20fantasy%20robes%20realistic%203D%20render&image_size=square',
+                            'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20mage%20walking%20frame3%20fantasy%20robes%20realistic%203D%20render&image_size=square',
+                            'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20mage%20walking%20frame4%20fantasy%20robes%20realistic%203D%20render&image_size=square'
+                        ]
+                    }
+                },
+                taoist: { 
+                    name: '道士', 
+                    hp: 100, 
+                    mp: 100, 
+                    minAtk: 6, 
+                    maxAtk: 10,
+                    minDef: 3, 
+                    maxDef: 6,
+                    acc: 9,
+                    agi: 9,
+                    icon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20taoist%20character%20fantasy%20robes%20realistic%203D%20render&image_size=square',
+                    color: '#95e1d3',
+                    sprite: {
+                        idle: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20taoist%20idle%20stance%20fantasy%20robes%20realistic%203D%20render&image_size=square',
+                        walk: [
+                            'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20taoist%20walking%20frame1%20fantasy%20robes%20realistic%203D%20render&image_size=square',
+                            'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20taoist%20walking%20frame2%20fantasy%20robes%20realistic%203D%20render&image_size=square',
+                            'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20taoist%20walking%20frame3%20fantasy%20robes%20realistic%203D%20render&image_size=square',
+                            'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20taoist%20walking%20frame4%20fantasy%20robes%20realistic%203D%20render&image_size=square'
+                        ]
+                    }
+                }
+            },
+            MONSTERS: [
+                { name: '鸡', hp: 30, atk: 3, def: 0, exp: 8, level: 1, icon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20chicken%20monster%20realistic%203D%20render&image_size=square', color: '#fff' },
+                { name: '鹿', hp: 50, atk: 5, def: 1, exp: 12, level: 2, icon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20deer%20monster%20realistic%203D%20render&image_size=square', color: '#d4a574' },
+                { name: '多钩猫', hp: 60, atk: 8, def: 2, exp: 18, level: 3, icon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20cat%20monster%20fantasy%20realistic%203D%20render&image_size=square', color: '#ff6b6b' },
+                { name: '钉耙猫', hp: 70, atk: 10, def: 3, exp: 22, level: 4, icon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20cat%20monster%20fantasy%20realistic%203D%20render&image_size=square', color: '#4a7c59' },
+                { name: '稻草人', hp: 80, atk: 12, def: 4, exp: 28, level: 5, icon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20scarecrow%20monster%20fantasy%20realistic%203D%20render&image_size=square', color: '#ffd700' },
+                { name: '骷髅', hp: 120, atk: 18, def: 6, exp: 45, level: 10, icon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20skeleton%20monster%20fantasy%20realistic%203D%20render&image_size=square', color: '#ddd' },
+                { name: '僵尸', hp: 150, atk: 22, def: 8, exp: 60, level: 15, icon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20zombie%20monster%20fantasy%20realistic%203D%20render&image_size=square', color: '#2d5016' },
+                { name: '红野猪', hp: 200, atk: 30, def: 12, exp: 85, level: 20, icon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20red%20boar%20monster%20fantasy%20realistic%203D%20render&image_size=square', color: '#c62828' },
+                { name: '黑野猪', hp: 250, atk: 35, def: 15, exp: 100, level: 25, icon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20black%20boar%20monster%20fantasy%20realistic%203D%20render&image_size=square', color: '#333' },
+                { name: '白野猪', hp: 350, atk: 45, def: 20, exp: 150, level: 30, icon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=MMORPG%20white%20boar%20monster%20fantasy%20realistic%203D%20render&image_size=square', color: '#fff' }
+            ]
+        };
+
+        // ==================== 游戏状态 ====================
+        let game = null;
+        let player = null;
+        let currentMap = null;
+        let monsters = [];
+        let drops = [];
+        let particles = [];
+        let renderList = [];
+
+        // ==================== 职业选择 ====================
+        document.querySelectorAll('.profession-card').forEach(card => {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.profession-card').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+
+        // ==================== 开始游戏按钮 ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded 事件触发');
+            const startBtn = document.getElementById('startGameBtn');
+            if (startBtn) {
+                console.log('找到开始游戏按钮');
+                startBtn.addEventListener('click', startGame);
+            } else {
+                console.error('未找到开始游戏按钮');
+            }
+        });
+
+        // ==================== 启动游戏 ====================
+        function startGame() {
+            console.log('startGame函数被调用');
+            
+            // 确保DOM完全加载
+            if (document.readyState !== 'complete') {
+                console.log('DOM尚未完全加载，延迟启动游戏');
+                setTimeout(startGame, 100);
+                return;
+            }
+            
+            const name = document.getElementById('username').value.trim();
+            console.log('角色名:', name);
+            if (!name) {
+                alert('请输入角色名！');
+                return;
+            }
+
+            const prof = document.querySelector('.profession-card.selected').dataset.prof;
+            console.log('职业:', prof);
+            
+            // 初始化游戏
+            console.log('初始化玩家');
+            player = new Player(name, prof);
+            console.log('玩家初始化完成:', player);
+            
+            console.log('初始化地图');
+            currentMap = new GameMap(CONFIG.MAP_WIDTH, CONFIG.MAP_HEIGHT);
+            console.log('地图初始化完成:', currentMap);
+            
+            console.log('初始化游戏');
+            game = new Game();
+            console.log('游戏初始化完成:', game);
+
+            // 隐藏登录界面
+            console.log('隐藏登录界面');
+            const loginScreen = document.getElementById('loginScreen');
+            const gameScreen = document.getElementById('gameScreen');
+            if (loginScreen) {
+                loginScreen.style.display = 'none';
+            } else {
+                console.error('未找到登录界面');
+            }
+            if (gameScreen) {
+                gameScreen.style.display = 'flex';
+                console.log('游戏界面显示');
+                
+                // 强制重排
+                gameScreen.offsetHeight;
+                
+                // 确保Canvas尺寸正确
+                setTimeout(() => {
+                    if (game && game.resize) {
+                        game.resize();
+                        console.log('Canvas尺寸已调整');
+                    }
+                }, 50);
+                
+                // 延迟启动游戏循环，确保Canvas完全准备好
+                setTimeout(() => {
+                    // 检查Canvas是否存在
+                    const canvas = document.getElementById('gameCanvas');
+                    if (!canvas) {
+                        console.error('Canvas元素不存在');
+                        return;
+                    }
+                    
+                    // 检查Canvas上下文是否存在
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        console.error('Canvas上下文不存在');
+                        return;
+                    }
+                    
+                    // 更新UI
+                    console.log('更新UI');
+                    updateUI();
+                    
+                    // 启动游戏循环
+                    console.log('启动游戏循环');
+                    requestAnimationFrame((time) => game.gameLoop(time));
+                }, 300);
+            } else {
+                console.error('未找到游戏界面');
+            }
+        }
+
+        // ==================== 玩家类 ====================
+        class Player {
+            constructor(name, profession) {
+                this.name = name;
+                this.profession = profession;
+                const prof = CONFIG.PROFESSIONS[profession];
+                
+                this.level = 1;
+                this.hp = prof.hp;
+                this.maxHp = prof.hp;
+                this.mp = prof.mp;
+                this.maxMp = prof.mp;
+                this.exp = 0;
+                this.maxExp = 100;
+                this.minAtk = prof.minAtk;
+                this.maxAtk = prof.maxAtk;
+                this.minDef = prof.minDef;
+                this.maxDef = prof.maxDef;
+                this.minMDef = 3;
+                this.maxMDef = 5;
+                this.minMAtk = 0;
+                this.maxMAtk = 0;
+                this.acc = prof.acc;
+                this.agi = prof.agi;
+                this.gold = 0;
+                
+                this.x = 40;
+                this.y = 40;
+                this.targetX = 40;
+                this.targetY = 40;
+                this.isMoving = false;
+                this.isAttacking = false;
+                this.autoFighting = false;
+                this.isDead = false;
+                
+                this.equipment = {};
+                this.inventory = [];
+                this.skills = [];
+                
+                // 动画状态
+                this.frame = 0;
+                this.frameTimer = 0;
+                this.direction = 0; // 0-7 方向
+                
+                // 攻击冷却时间
+                this.attackCooldown = 1000; // 1秒冷却时间
+                this.lastAttackTime = 0;
+            }
+
+            moveTo(x, y) {
+                if (currentMap.canWalk(Math.floor(x), Math.floor(y))) {
+                    this.targetX = x;
+                    this.targetY = y;
+                    this.isMoving = true;
+                    
+                    const dx = x - this.x;
+                    const dy = y - this.y;
+                    this.setDirection(dx, dy);
+                }
+            }
+
+            setDirection(dx, dy) {
+                const angle = Math.atan2(dy, dx);
+                const degrees = (angle * 180 / Math.PI + 360) % 360;
+                
+                if (degrees >= 337.5 || degrees < 22.5) this.direction = 6;
+                else if (degrees >= 22.5 && degrees < 67.5) this.direction = 7;
+                else if (degrees >= 67.5 && degrees < 112.5) this.direction = 0;
+                else if (degrees >= 112.5 && degrees < 157.5) this.direction = 1;
+                else if (degrees >= 157.5 && degrees < 202.5) this.direction = 2;
+                else if (degrees >= 202.5 && degrees < 247.5) this.direction = 3;
+                else if (degrees >= 247.5 && degrees < 292.5) this.direction = 4;
+                else this.direction = 5;
+            }
+
+            update(deltaTime) {
+                if (this.isDead) return;
+                
+                if (this.isMoving) {
+                    const dx = this.targetX - this.x;
+                    const dy = this.targetY - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < 0.2) {
+                        this.isMoving = false;
+                        this.x = this.targetX;
+                        this.y = this.targetY;
+                    } else {
+                        const speed = CONFIG.WALK_SPEED * deltaTime / 1000;
+                        this.x += (dx / dist) * speed;
+                        this.y += (dy / dist) * speed;
+                    }
+                    
+                    this.frameTimer += deltaTime;
+                    if (this.frameTimer >= CONFIG.ANIMATION_SPEED) {
+                        this.frame = (this.frame + 1) % 8;
+                        this.frameTimer = 0;
+                    }
+                } else {
+                    this.frame = 0;
+                }
+            }
+
+            takeDamage(damage) {
+                const actualDamage = Math.max(1, damage - Math.floor(Math.random() * (this.maxDef - this.minDef + 1)) - this.minDef);
+                this.hp = Math.max(0, this.hp - actualDamage);
+                game.showDamage(actualDamage, this.x, this.y, false);
+                updateUI();
+                
+                if (this.hp <= 0) {
+                    this.die();
+                }
+            }
+
+            heal(amount) {
+                this.hp = Math.min(this.maxHp, this.hp + amount);
+                game.showDamage(amount, this.x, this.y, true);
+                updateUI();
+            }
+
+            die() {
+                this.isDead = true;
+                addChatMessage('你阵亡了！3秒后复活...', 'system');
+                setTimeout(() => {
+                    this.isDead = false;
+                    this.hp = this.maxHp;
+                    this.mp = this.maxMp;
+                    this.x = 40;
+                    this.y = 40;
+                    this.targetX = 40;
+                    this.targetY = 40;
+                    this.isMoving = false;
+                    this.isAttacking = false;
+                    this.autoFighting = false;
+                    updateUI();
+                    addChatMessage('你已复活！', 'system');
+                }, 3000);
+            }
+
+            gainExp(amount) {
+                this.exp += amount;
+                if (this.exp >= this.maxExp) {
+                    this.levelUp();
+                }
+                updateUI();
+            }
+
+            levelUp() {
+                this.level++;
+                this.exp -= this.maxExp;
+                this.maxExp = Math.floor(this.maxExp * 1.5);
+                this.maxHp += 25;
+                this.maxMp += 15;
+                this.hp = this.maxHp;
+                this.mp = this.maxMp;
+                this.minAtk += 3;
+                this.maxAtk += 5;
+                this.minDef += 2;
+                this.maxDef += 3;
+                addChatMessage(`恭喜升级！当前等级：${this.level}`, 'system');
+                game.createParticles(this.x, this.y, 'levelup');
+            }
+
+            getDamage() {
+                return Math.floor(Math.random() * (this.maxAtk - this.minAtk + 1)) + this.minAtk;
+            }
+
+            attack(monster) {
+                const damage = this.getDamage();
+                const isCrit = Math.random() < 0.15;
+                const finalDamage = isCrit ? Math.floor(damage * 1.5) : damage;
+                monster.takeDamage(finalDamage, isCrit);
+            }
+        }
+
+        // ==================== 怪物类 ====================
+        class Monster {
+            constructor(type, x, y) {
+                this.type = type;
+                this.name = type.name;
+                this.hp = type.hp;
+                this.maxHp = type.hp;
+                this.atk = type.atk;
+                this.def = type.def;
+                this.exp = type.exp;
+                this.level = type.level;
+                this.icon = type.icon;
+                this.color = type.color;
+                
+                this.x = x;
+                this.y = y;
+                this.targetX = x;
+                this.targetY = y;
+                this.isMoving = false;
+                this.moveTimer = 0;
+                this.attackTimer = 0;
+                this.target = null;
+                
+                this.frame = 0;
+                this.frameTimer = 0;
+                this.direction = 0;
+            }
+
+            update(deltaTime) {
+                const distToPlayer = Math.sqrt(
+                    Math.pow(this.x - player.x, 2) + 
+                    Math.pow(this.y - player.y, 2)
+                );
+
+                if (distToPlayer < 8) {
+                    this.target = player;
+                    if (distToPlayer > 1.5) {
+                        const dx = player.x - this.x;
+                        const dy = player.y - this.y;
+                        const speed = 2 * deltaTime / 1000;
+                        this.x += (dx / distToPlayer) * speed;
+                        this.y += (dy / distToPlayer) * speed;
+                        this.isMoving = true;
+                        this.setDirection(dx, dy);
+                    } else if (this.attackTimer <= 0) {
+                        this.attack(player);
+                        this.attackTimer = 1200;
+                        this.isMoving = false;
+                    }
+                } else {
+                    this.moveTimer += deltaTime;
+                    if (this.moveTimer > 2500) {
+                        this.moveTimer = 0;
+                        const angle = Math.random() * Math.PI * 2;
+                        const newX = this.x + Math.cos(angle) * 3;
+                        const newY = this.y + Math.sin(angle) * 3;
+                        if (currentMap && currentMap.canWalk(Math.floor(newX), Math.floor(newY))) {
+                            this.x = newX;
+                            this.y = newY;
+                            this.isMoving = true;
+                            this.setDirection(Math.cos(angle), Math.sin(angle));
+                        }
+                    } else {
+                        this.isMoving = false;
+                    }
+                }
+
+                if (this.attackTimer > 0) this.attackTimer -= deltaTime;
+                
+                if (this.isMoving) {
+                    this.frameTimer += deltaTime;
+                    if (this.frameTimer >= CONFIG.ANIMATION_SPEED) {
+                        this.frame = (this.frame + 1) % 8;
+                        this.frameTimer = 0;
+                    }
+                }
+            }
+
+            setDirection(dx, dy) {
+                const angle = Math.atan2(dy, dx);
+                const degrees = (angle * 180 / Math.PI + 360) % 360;
+                
+                if (degrees >= 337.5 || degrees < 22.5) this.direction = 6;
+                else if (degrees >= 22.5 && degrees < 67.5) this.direction = 7;
+                else if (degrees >= 67.5 && degrees < 112.5) this.direction = 0;
+                else if (degrees >= 112.5 && degrees < 157.5) this.direction = 1;
+                else if (degrees >= 157.5 && degrees < 202.5) this.direction = 2;
+                else if (degrees >= 202.5 && degrees < 247.5) this.direction = 3;
+                else if (degrees >= 247.5 && degrees < 292.5) this.direction = 4;
+                else this.direction = 5;
+            }
+
+            attack(target) {
+                const currentTime = Date.now();
+                if (currentTime - this.lastAttackTime < this.attackCooldown) {
+                    return; // 冷却时间未到，不能攻击
+                }
+                
+                const damage = Math.max(1, this.atk - Math.floor(Math.random() * (target.maxDef - target.minDef + 1)) - target.minDef);
+                target.takeDamage(damage);
+                
+                this.lastAttackTime = currentTime;
+            }
+
+            takeDamage(damage, isCrit = false) {
+                const actualDamage = Math.max(1, damage - this.def);
+                this.hp -= actualDamage;
+                game.showDamage(actualDamage, this.x, this.y, false, isCrit);
+                
+                if (this.hp <= 0) {
+                    this.die();
+                }
+            }
+
+            die() {
+                player.gainExp(this.exp);
+                const goldDrop = Math.floor(Math.random() * this.level * 5) + this.level * 2;
+                player.gold += goldDrop;
+                addChatMessage(`击败 ${this.name}，获得 ${this.exp} 经验，${goldDrop} 金币`, 'combat');
+                
+                if (Math.random() < 0.25) {
+                    const drop = this.generateDrop();
+                    if (drop) drops.push({ item: drop, x: this.x, y: this.y });
+                }
+
+                game.createParticles(this.x, this.y, 'death');
+                const index = monsters.indexOf(this);
+                if (index > -1) monsters.splice(index, 1);
+                
+                // 清除选中的怪物
+                if (game.selectedMonster === this) {
+                    game.selectedMonster = null;
+                }
+                
+                updateUI();
+            }
+
+            generateDrop() {
+                const items = [
+                    { name: '金疮药', icon: '🧪', type: 'potion' },
+                    { name: '魔法药', icon: '💧', type: 'potion' },
+                    { name: '金币袋', icon: '💰', type: 'gold', value: Math.floor(Math.random() * 50) + 10 }
+                ];
+                
+                const equipment = [
+                    { name: '铁剑', icon: '🗡️', type: 'weapon', slot: 'weapon' },
+                    { name: '木剑', icon: '🥢', type: 'weapon', slot: 'weapon' },
+                    { name: '青铜头盔', icon: '🪖', type: 'helmet', slot: 'helmet' },
+                    { name: '布衣', icon: '👕', type: 'armor', slot: 'armor' },
+                    { name: '铁戒指', icon: '💍', type: 'ring', slot: 'ring1' },
+                    { name: '皮靴', icon: '👢', type: 'shoes', slot: 'shoes' }
+                ];
+
+                if (Math.random() < 0.15) {
+                    return equipment[Math.floor(Math.random() * equipment.length)];
+                } else if (Math.random() < 0.5) {
+                    return items[Math.floor(Math.random() * items.length)];
+                }
+                return null;
+            }
+        }
+
+        // ==================== 地图类 ====================
+        class GameMap {
+            constructor(width, height) {
+                this.width = width;
+                this.height = height;
+                this.tiles = [];
+                this.generate();
+            }
+
+            generate() {
+                for (let y = 0; y < this.height; y++) {
+                    this.tiles[y] = [];
+                    for (let x = 0; x < this.width; x++) {
+                        if (x === 0 || x === this.width - 1 || y === 0 || y === this.height - 1) {
+                            this.tiles[y][x] = 'wall';
+                        } else if (x > 30 && x < 50 && y > 30 && y < 50) {
+                            // 中央PK区域
+                            this.tiles[y][x] = 'grass';
+                        } else if (x > 15 && x < 65 && y > 15 && y < 65) {
+                            // 主要活动区域
+                            const rand = Math.random();
+                            if (rand < 0.05) this.tiles[y][x] = 'building';
+                            else if (rand < 0.12) this.tiles[y][x] = 'tree';
+                            else if (rand < 0.18) this.tiles[y][x] = 'rock';
+                            else if (rand < 0.22) this.tiles[y][x] = 'fence';
+                            else this.tiles[y][x] = 'grass';
+                        } else {
+                            // 外围区域
+                            const rand = Math.random();
+                            if (rand < 0.1) this.tiles[y][x] = 'tree';
+                            else if (rand < 0.18) this.tiles[y][x] = 'rock';
+                            else this.tiles[y][x] = 'grass';
+                        }
+                    }
+                }
+            }
+
+            canWalk(x, y) {
+                if (x < 0 || x >= this.width || y < 0 || y >= this.height) return false;
+                const tile = this.tiles[Math.floor(y)][Math.floor(x)];
+                return tile === 'grass' || tile === 'fence';
+            }
+
+            isPKZone(x, y) {
+                return x > 30 && x < 50 && y > 30 && y < 50;
+            }
+
+            isoToScreen(x, y) {
+                const screenX = (x - y) * CONFIG.TILE_WIDTH / 2;
+                const screenY = (x + y) * CONFIG.TILE_HEIGHT / 2;
+                return { x: screenX, y: screenY };
+            }
+
+            screenToIso(screenX, screenY) {
+                const x = (screenX / (CONFIG.TILE_WIDTH / 2) + screenY / (CONFIG.TILE_HEIGHT / 2)) / 2;
+                const y = (screenY / (CONFIG.TILE_HEIGHT / 2) - screenX / (CONFIG.TILE_WIDTH / 2)) / 2;
+                return { x, y };
+            }
+
+            draw(ctx, cameraX, cameraY) {
+                const centerX = ctx.canvas.width / 2;
+                const centerY = ctx.canvas.height / 2;
+                
+                // 增加渲染范围，确保角色周围的地图都能被正确绘制
+                const startX = Math.max(0, Math.floor(cameraX - 40));
+                const startY = Math.max(0, Math.floor(cameraY - 40));
+                const endX = Math.min(this.width, Math.ceil(cameraX + 40));
+                const endY = Math.min(this.height, Math.ceil(cameraY + 40));
+
+                // 绘制背景
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+                for (let sum = startX + startY; sum <= endX + endY; sum++) {
+                    for (let x = startX; x <= endX; x++) {
+                        const y = sum - x;
+                        if (y < startY || y > endY) continue;
+                        
+                        const tile = this.tiles[y][x];
+                        const pos = this.isoToScreen(x - cameraX, y - cameraY);
+                        const drawX = centerX + pos.x;
+                        const drawY = centerY + pos.y;
+                        
+                        this.drawTile(ctx, tile, drawX, drawY, x, y);
+                    }
+                }
+            }
+
+            drawTile(ctx, tile, x, y, tileX, tileY) {
+                const w = CONFIG.TILE_WIDTH;
+                const h = CONFIG.TILE_HEIGHT;
+                
+                ctx.beginPath();
+                ctx.moveTo(x, y - h/2);
+                ctx.lineTo(x + w/2, y);
+                ctx.lineTo(x, y + h/2);
+                ctx.lineTo(x - w/2, y);
+                ctx.closePath();
+
+                if (this.isPKZone(tileX, tileY)) {
+                    ctx.fillStyle = '#5d4d3d';
+                    ctx.fill();
+                    ctx.fillStyle = '#6d5d4d';
+                    ctx.beginPath();
+                    ctx.moveTo(x, y - h/2 + 2);
+                    ctx.lineTo(x + w/2 - 2, y);
+                    ctx.lineTo(x, y + h/2 - 2);
+                    ctx.lineTo(x - w/2 + 2, y);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (tile === 'grass') {
+                    ctx.fillStyle = '#3d5a3d';
+                    ctx.fill();
+                    ctx.fillStyle = '#4d6a4d';
+                    ctx.beginPath();
+                    ctx.moveTo(x, y - h/2 + 2);
+                    ctx.lineTo(x + w/2 - 2, y);
+                    ctx.lineTo(x, y + h/2 - 2);
+                    ctx.lineTo(x - w/2 + 2, y);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (tile === 'tree') {
+                    ctx.fillStyle = '#3d5a3d';
+                    ctx.fill();
+                    this.drawTree(ctx, x, y - 20);
+                } else if (tile === 'rock') {
+                    ctx.fillStyle = '#3d5a3d';
+                    ctx.fill();
+                    this.drawRock(ctx, x, y - 10);
+                } else if (tile === 'building') {
+                    ctx.fillStyle = '#8b4513';
+                    ctx.fill();
+                    this.drawBuilding(ctx, x, y - 25);
+                } else if (tile === 'fence') {
+                    ctx.fillStyle = '#a0522d';
+                    ctx.fill();
+                    this.drawFence(ctx, x, y - 5);
+                } else if (tile === 'wall') {
+                    ctx.fillStyle = '#666';
+                    ctx.fill();
+                    ctx.strokeStyle = '#888';
+                    ctx.stroke();
+                }
+            }
+
+            drawTree(ctx, x, y) {
+                ctx.fillStyle = '#4a3728';
+                ctx.fillRect(x - 4, y, 8, 25);
+                ctx.fillStyle = '#1a4010';
+                ctx.beginPath();
+                ctx.arc(x, y - 10, 22, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#2a5018';
+                ctx.beginPath();
+                ctx.arc(x, y - 18, 18, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#3a6020';
+                ctx.beginPath();
+                ctx.arc(x, y - 25, 14, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            drawRock(ctx, x, y) {
+                ctx.fillStyle = '#555';
+                ctx.beginPath();
+                ctx.ellipse(x, y, 15, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#777';
+                ctx.beginPath();
+                ctx.ellipse(x - 4, y - 4, 10, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            drawBuilding(ctx, x, y) {
+                // 绘制小木屋
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(x - 20, y, 40, 30);
+                
+                // 屋顶
+                ctx.fillStyle = '#a0522d';
+                ctx.beginPath();
+                ctx.moveTo(x - 25, y);
+                ctx.lineTo(x, y - 15);
+                ctx.lineTo(x + 25, y);
+                ctx.closePath();
+                ctx.fill();
+                
+                // 门
+                ctx.fillStyle = '#654321';
+                ctx.fillRect(x - 5, y + 15, 10, 15);
+                
+                // 窗户
+                ctx.fillStyle = '#2a2a2a';
+                ctx.fillRect(x - 15, y + 10, 8, 8);
+                ctx.fillRect(x + 7, y + 10, 8, 8);
+            }
+
+            drawFence(ctx, x, y) {
+                // 绘制围栏
+                ctx.strokeStyle = '#8b4513';
+                ctx.lineWidth = 2;
+                
+                // 横向栅栏
+                ctx.beginPath();
+                ctx.moveTo(x - 25, y);
+                ctx.lineTo(x + 25, y);
+                ctx.stroke();
+                
+                // 竖杆
+                for (let i = -20; i <= 20; i += 10) {
+                    ctx.beginPath();
+                    ctx.moveTo(x + i, y - 10);
+                    ctx.lineTo(x + i, y + 10);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // ==================== 游戏主类 ====================
+        class Game {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.minimapCanvas = document.getElementById('minimapCanvas');
+                this.minimapCtx = this.minimapCanvas.getContext('2d');
+                this.cameraX = 0;
+                this.cameraY = 0;
+                this.lastTime = 0;
+                this.mouseX = 0;
+                this.mouseY = 0;
+                this.mouseDown = false;
+                this.rightMouseDown = false;
+                this.selectedMonster = null;
+                
+                this.resize();
+                this.setupEventListeners();
+                this.preloadImages();
+                this.spawnMonsters();
+            }
+
+            resize() {
+                const container = document.getElementById('gameCanvasContainer');
+                this.canvas.width = container.clientWidth;
+                this.canvas.height = container.clientHeight;
+            }
+
+            setupEventListeners() {
+                window.addEventListener('resize', () => this.resize());
+                
+                // 只在canvas上阻止特定的鼠标事件默认行为
+                this.canvas.addEventListener('mousedown', (e) => {
+                    // 只阻止右键的默认行为，避免与浏览器冲突
+                    if (e.button === 2) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                    const rect = this.canvas.getBoundingClientRect();
+                    this.mouseX = e.clientX - rect.left;
+                    this.mouseY = e.clientY - rect.top;
+                    
+                    if (e.button === 0) {
+                        this.handleLeftClick();
+                    } else if (e.button === 2) {
+                        this.handleRightClick();
+                    }
+                });
+
+                // 阻止右键菜单
+                this.canvas.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+
+                // 鼠标移动事件，不阻止默认行为
+                this.canvas.addEventListener('mousemove', (e) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    this.mouseX = e.clientX - rect.left;
+                    this.mouseY = e.clientY - rect.top;
+                });
+
+                // 鼠标滚轮事件，不阻止默认行为
+                this.canvas.addEventListener('wheel', (e) => {
+                    // 允许浏览器的滚轮行为
+                });
+
+                // 鼠标抬起事件，不阻止默认行为
+                this.canvas.addEventListener('mouseup', (e) => {
+                    // 允许浏览器的默认行为
+                });
+
+                // 鼠标离开事件，不阻止默认行为
+                this.canvas.addEventListener('mouseleave', (e) => {
+                    // 允许浏览器的默认行为
+                });
+
+                // 处理键盘事件，只允许游戏需要的按键
+                window.addEventListener('keydown', (e) => {
+                    // 只处理游戏需要的按键，其他按键不阻止默认行为
+                    const allowedKeys = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11'];
+                    if (allowedKeys.includes(e.key)) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (e.key === 'F9') {
+                            openModal('equipmentModal');
+                        } else if (e.key === 'F10') {
+                            openModal('skillModal');
+                        } else if (e.key === 'F11') {
+                            openModal('statusModal');
+                        } else if (e.key >= 'F1' && e.key <= 'F8') {
+                            this.useSkill(e.key);
+                        }
+                    }
+                    // 其他按键允许默认行为
+                });
+
+                // 不阻止键盘按键的默认行为
+                window.addEventListener('keypress', (e) => {
+                    // 允许浏览器的默认行为
+                });
+
+                // 不阻止键盘按键释放的默认行为
+                window.addEventListener('keyup', (e) => {
+                    // 允许浏览器的默认行为
+                });
+
+                // 只阻止canvas上的右键菜单
+                this.canvas.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+
+                // 阻止页面跳转的默认行为
+                document.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'A') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                });
+            }
+
+            handleLeftClick() {
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                
+                const worldPos = currentMap.screenToIso(
+                    this.mouseX - centerX,
+                    this.mouseY - centerY
+                );
+                const worldX = worldPos.x + this.cameraX;
+                const worldY = worldPos.y + this.cameraY;
+
+                let clickedMonster = null;
+                if (monsters && monsters.length > 0) {
+                    for (let monster of monsters) {
+                        const dist = Math.sqrt(
+                            Math.pow(monster.x - worldX, 2) + 
+                            Math.pow(monster.y - worldY, 2)
+                        );
+                        if (dist < 1.5) {
+                            clickedMonster = monster;
+                            break;
+                        }
+                    }
+                }
+
+                if (clickedMonster) {
+                    this.selectedMonster = clickedMonster;
+                    this.attackMonster(clickedMonster);
+                }
+            }
+
+            handleRightClick() {
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                
+                const worldPos = currentMap.screenToIso(
+                    this.mouseX - centerX,
+                    this.mouseY - centerY
+                );
+                const worldX = worldPos.x + this.cameraX;
+                const worldY = worldPos.y + this.cameraY;
+
+                if (currentMap.canWalk(worldX, worldY)) {
+                    player.moveTo(worldX, worldY);
+                    this.selectedMonster = null;
+                }
+            }
+
+            attackMonster(monster) {
+                const dist = Math.sqrt(
+                    Math.pow(monster.x - player.x, 2) + 
+                    Math.pow(monster.y - player.y, 2)
+                );
+                
+                if (dist <= 2) {
+                    player.attack(monster);
+                } else {
+                    player.moveTo(monster.x, monster.y);
+                }
+            }
+
+            useSkill(key) {
+                const skillNum = parseInt(key.charAt(1));
+                addChatMessage(`使用技能 ${key}`, 'system');
+            }
+
+            showDamage(damage, x, y, isHeal = false, isCrit = false) {
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                const pos = currentMap.isoToScreen(x - this.cameraX, y - this.cameraY);
+                const screenX = centerX + pos.x;
+                const screenY = centerY + pos.y - 30;
+
+                const floatText = document.createElement('div');
+                floatText.className = `float-text ${isHeal ? 'heal' : isCrit ? 'critical' : 'normal'}`;
+                floatText.textContent = isHeal ? `+${damage}` : `-${damage}`;
+                floatText.style.left = screenX + 'px';
+                floatText.style.top = screenY + 'px';
+                document.getElementById('gameCanvasContainer').appendChild(floatText);
+
+                setTimeout(() => floatText.remove(), 1200);
+            }
+
+            createParticles(x, y, type) {
+                const particleCount = type === 'death' ? 8 : type === 'levelup' ? 15 : 5;
+                for (let i = 0; i < particleCount; i++) {
+                    particles.push({
+                        x: x,
+                        y: y,
+                        vx: (Math.random() - 0.5) * 4,
+                        vy: -Math.random() * 3 - 1,
+                        life: 1,
+                        type: type
+                    });
+                }
+            }
+
+            updateParticles(deltaTime) {
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x += p.vx * deltaTime / 100;
+                    p.y += p.vy * deltaTime / 100;
+                    p.vy += 0.1;
+                    p.life -= deltaTime / 1000;
+                    if (p.life <= 0) {
+                        particles.splice(i, 1);
+                    }
+                }
+            }
+
+            drawParticles() {
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+
+                if (!currentMap) return;
+
+                for (const p of particles) {
+                    const pos = currentMap.isoToScreen(p.x - this.cameraX, p.y - this.cameraY);
+                    const alpha = Math.max(0, p.life);
+                    const color = p.type === 'death' ? '#ff4444' : p.type === 'levelup' ? '#ffd700' : '#ffffff';
+                    this.ctx.fillStyle = color;
+                    this.ctx.globalAlpha = alpha;
+                    this.ctx.beginPath();
+                    this.ctx.arc(centerX + pos.x, centerY + pos.y - 20, 3, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.globalAlpha = 1;
+                }
+            }
+
+            spawnMonsters() {
+                const corners = [
+                    { x: 5, y: 5, w: 15, h: 15 },
+                    { x: 60, y: 5, w: 15, h: 15 },
+                    { x: 5, y: 60, w: 15, h: 15 },
+                    { x: 60, y: 60, w: 15, h: 15 }
+                ];
+
+                corners.forEach((corner, cornerIndex) => {
+                    const monsterCount = 8 + Math.floor(Math.random() * 5);
+                    for (let i = 0; i < monsterCount; i++) {
+                        const x = corner.x + Math.random() * corner.w;
+                        const y = corner.y + Math.random() * corner.h;
+                        const levelRange = [
+                            [0, 4], [0, 5], [3, 7], [5, 9]
+                        ][cornerIndex];
+                        const availableMonsters = CONFIG.MONSTERS.filter((m, idx) => idx >= levelRange[0] && idx <= levelRange[1]);
+                        const monsterType = availableMonsters[Math.floor(Math.random() * availableMonsters.length)];
+                        monsters.push(new Monster(monsterType, x, y));
+                    }
+                });
+            }
+
+            // 图像缓存
+            imageCache = {};
+            // 预加载的图像
+            preloadedImages = new Set();
+            // 图像加载状态
+            imagesLoaded = false;
+            // 加载中的图像数量
+            loadingImages = 0;
+            // 加载进度
+            loadProgress = 0;
+            // 加载超时时间（毫秒）
+            loadTimeout = 10000;
+            // 加载开始时间
+            loadStartTime = 0;
+
+            // 预加载图像
+            preloadImages() {
+                console.log('开始预加载图像...');
+                this.loadingImages = 0;
+                this.loadProgress = 0;
+                this.loadStartTime = Date.now();
+                
+                // 计算总图像数量
+                let totalImages = 0;
+                
+                // 计算实际需要加载的图像数量
+                for (const prof in CONFIG.PROFESSIONS) {
+                    const profession = CONFIG.PROFESSIONS[prof];
+                    if (!this.imageCache[profession.icon]) totalImages++;
+                    if (!this.imageCache[profession.sprite.idle]) totalImages++;
+                    profession.sprite.walk.forEach(frame => {
+                        if (!this.imageCache[frame]) totalImages++;
+                    });
+                }
+                CONFIG.MONSTERS.forEach(monster => {
+                    if (!this.imageCache[monster.icon]) totalImages++;
+                });
+                
+                // 如果没有图像需要加载，直接标记为完成
+                if (totalImages === 0) {
+                    this.imagesLoaded = true;
+                    this.loadProgress = 100;
+                    console.log('图像预加载完成');
+                    return;
+                }
+                
+                // 预加载职业图像
+                for (const prof in CONFIG.PROFESSIONS) {
+                    const profession = CONFIG.PROFESSIONS[prof];
+                    this.loadImage(profession.icon, totalImages);
+                    this.loadImage(profession.sprite.idle, totalImages);
+                    profession.sprite.walk.forEach(frame => {
+                        this.loadImage(frame, totalImages);
+                    });
+                }
+                
+                // 预加载怪物图像
+                CONFIG.MONSTERS.forEach(monster => {
+                    this.loadImage(monster.icon, totalImages);
+                });
+            }
+
+            // 加载图像
+            loadImage(url, totalImages) {
+                if (!this.imageCache[url]) {
+                    const img = new Image();
+                    this.loadingImages++;
+                    img.src = url;
+                    img.onload = () => {
+                        this.loadingImages--;
+                        this.loadProgress = Math.round((totalImages - this.loadingImages) / totalImages * 100);
+                        if (this.loadingImages === 0) {
+                            this.imagesLoaded = true;
+                            this.loadProgress = 100;
+                            console.log('图像预加载完成');
+                        }
+                    };
+                    img.onerror = () => {
+                        console.error(`无法加载图像: ${url}`);
+                        // 加载失败时使用默认图标
+                        img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiMzMzMiLz48cGF0aCBkPSJNMjAgMTBDMTQuNDggMTAgMTAgMTQuNDggMTAgMjBDMTAgMjUuNTIgMTQuNDggMzAgMjAgMzBDMjUuNTIgMzAgMzAgMjUuNTIgMzAgMjBDMzAgMTQuNDggMjUuNTIgMTAgMjAgMTBaIiBmaWxsPSIjNjY2Ii8+PHRleHQgeD0iMjAiIHk9IjI2IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlJPTkdlbTwvdGV4dD48L3N2Zz4=';
+                        this.loadingImages--;
+                        this.loadProgress = Math.round((totalImages - this.loadingImages) / totalImages * 100);
+                        if (this.loadingImages === 0) {
+                            this.imagesLoaded = true;
+                            this.loadProgress = 100;
+                            console.log('图像预加载完成');
+                        }
+                    };
+                    this.imageCache[url] = img;
+                    this.preloadedImages.add(url);
+                }
+                return this.imageCache[url];
+            }
+
+            drawEntity(entity, isPlayer = false) {
+                // 错误检查
+                if (!entity || !currentMap) return;
+
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                
+                try {
+                    const pos = currentMap.isoToScreen(entity.x - this.cameraX, entity.y - this.cameraY);
+                    const screenX = centerX + pos.x;
+                    const screenY = centerY + pos.y;
+
+                    const bounce = entity.isMoving ? Math.sin(entity.frame * 0.8) * 3 : 0;
+                    const wobble = entity.isMoving ? Math.sin(entity.frame * 0.5) * 2 : 0;
+
+                    const color = isPlayer ? (CONFIG.PROFESSIONS[entity.profession]?.color || '#ff6b6b') : (entity.color || '#ff4444');
+
+                    this.ctx.save();
+                    this.ctx.translate(screenX, screenY - 20 - bounce);
+                    this.ctx.rotate(wobble * 0.05);
+
+                    // 阴影效果
+                    this.ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                    this.ctx.beginPath();
+                    this.ctx.ellipse(0, 25, 25, 10, 0, 0, Math.PI * 2);
+                    this.ctx.fill();
+
+                    // 绘制角色图像
+                    if (isPlayer) {
+                        const prof = CONFIG.PROFESSIONS[entity.profession];
+                        if (prof) {
+                            let img;
+                            if (entity.isMoving && prof.sprite?.walk && Array.isArray(prof.sprite.walk)) {
+                                const frameIndex = Math.floor(entity.frame / 2) % 4;
+                                img = this.loadImage(prof.sprite.walk[frameIndex]);
+                            } else if (prof.sprite?.idle) {
+                                img = this.loadImage(prof.sprite.idle);
+                            }
+                            if (img && img.complete) {
+                                this.ctx.shadowColor = color;
+                                this.ctx.shadowBlur = 15;
+                                this.ctx.shadowOffsetX = 2;
+                                this.ctx.shadowOffsetY = 2;
+                                this.ctx.drawImage(img, -32, -48, 64, 64);
+                            } else {
+                                // 图像未加载完成时显示占位符
+                                this.ctx.fillStyle = color;
+                                this.ctx.font = '48px Arial';
+                                this.ctx.textAlign = 'center';
+                                this.ctx.textBaseline = 'middle';
+                                this.ctx.fillText('⚔️', 0, 0);
+                            }
+                        } else {
+                            // 职业不存在时显示占位符
+                            this.ctx.fillStyle = color;
+                            this.ctx.font = '48px Arial';
+                            this.ctx.textAlign = 'center';
+                            this.ctx.textBaseline = 'middle';
+                            this.ctx.fillText('⚔️', 0, 0);
+                        }
+                    } else {
+                        if (entity.icon) {
+                            const img = this.loadImage(entity.icon);
+                            if (img && img.complete) {
+                                this.ctx.shadowColor = color;
+                                this.ctx.shadowBlur = 10;
+                                this.ctx.shadowOffsetX = 1;
+                                this.ctx.shadowOffsetY = 1;
+                                this.ctx.drawImage(img, -24, -36, 48, 48);
+                            } else {
+                                // 图像未加载完成时显示占位符
+                                this.ctx.fillStyle = color;
+                                this.ctx.font = '36px Arial';
+                                this.ctx.textAlign = 'center';
+                                this.ctx.textBaseline = 'middle';
+                                this.ctx.fillText('👹', 0, 0);
+                            }
+                        } else {
+                            // 没有图标时显示占位符
+                            this.ctx.fillStyle = color;
+                            this.ctx.font = '36px Arial';
+                            this.ctx.textAlign = 'center';
+                            this.ctx.textBaseline = 'middle';
+                            this.ctx.fillText('👹', 0, 0);
+                        }
+                    }
+
+                    this.ctx.restore();
+
+                    // 血条 - 更符合传奇风格
+                    if (entity.hp !== undefined && entity.maxHp !== undefined) {
+                        const hpPercent = Math.max(0, Math.min(1, entity.hp / entity.maxHp));
+                        const barWidth = 60;
+                        const barHeight = 8;
+                        const barY = screenY - 60 - bounce;
+
+                        this.ctx.fillStyle = '#000';
+                        this.ctx.fillRect(screenX - barWidth / 2 - 1, barY - 1, barWidth + 2, barHeight + 2);
+
+                        this.ctx.fillStyle = isPlayer ? '#8b0000' : (hpPercent > 0.5 ? '#006400' : hpPercent > 0.25 ? '#daa520' : '#8b0000');
+                        this.ctx.fillRect(screenX - barWidth / 2, barY, barWidth * hpPercent, barHeight);
+
+                        this.ctx.strokeStyle = '#8b4513';
+                        this.ctx.lineWidth = 1;
+                        this.ctx.strokeRect(screenX - barWidth / 2, barY, barWidth, barHeight);
+
+                        // 名称 - 更符合传奇风格
+                        this.ctx.font = 'bold 12px Courier New';
+                        this.ctx.textAlign = 'center';
+                        this.ctx.fillStyle = isPlayer ? '#ffd700' : '#fff';
+                        this.ctx.shadowColor = '#000';
+                        this.ctx.shadowBlur = 3;
+                        this.ctx.shadowOffsetX = 1;
+                        this.ctx.shadowOffsetY = 1;
+                        const nameY = barY - 12;
+                        this.ctx.fillText(entity.name || '未知', screenX, nameY);
+                        this.ctx.shadowBlur = 0;
+
+                        if (isPlayer && entity.level !== undefined) {
+                            this.ctx.fillStyle = '#4ecdc4';
+                            this.ctx.font = '10px Courier New';
+                            this.ctx.fillText(`Lv.${entity.level}`, screenX, nameY - 14);
+                        }
+
+                        // 怪物等级显示
+                        if (!isPlayer && entity.level !== undefined) {
+                            this.ctx.fillStyle = '#ff6b6b';
+                            this.ctx.font = '9px Courier New';
+                            this.ctx.fillText(`Lv.${entity.level}`, screenX, nameY - 12);
+                        }
+                    }
+                } catch (error) {
+                    console.error('绘制实体时出错:', error);
+                }
+            }
+
+            drawMinimap() {
+                const ctx = this.minimapCtx;
+                const scale = 174 / CONFIG.MAP_WIDTH;
+                const offset = 3;
+
+                // 清空小地图
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.fillRect(0, 0, 180, 180);
+
+                if (!currentMap) return;
+
+                // 绘制地图网格
+                for (let y = 0; y < CONFIG.MAP_HEIGHT; y++) {
+                    for (let x = 0; x < CONFIG.MAP_WIDTH; x++) {
+                        const tile = currentMap.tiles[y][x];
+                        if (currentMap.isPKZone(x, y)) {
+                            ctx.fillStyle = '#8b0000';
+                        } else if (tile === 'grass') {
+                            ctx.fillStyle = '#228b22';
+                        } else if (tile === 'tree') {
+                            ctx.fillStyle = '#556b2f';
+                        } else if (tile === 'rock') {
+                            ctx.fillStyle = '#708090';
+                        } else if (tile === 'building') {
+                            ctx.fillStyle = '#8b4513';
+                        } else if (tile === 'fence') {
+                            ctx.fillStyle = '#daa520';
+                        } else if (tile === 'wall') {
+                            ctx.fillStyle = '#654321';
+                        } else {
+                            ctx.fillStyle = '#333';
+                        }
+                        ctx.fillRect(offset + x * scale, offset + y * scale, scale + 0.5, scale + 0.5);
+                    }
+                }
+
+                // 绘制怪物
+                (monsters || []).forEach(m => {
+                    ctx.fillStyle = '#ff4444';
+                    ctx.beginPath();
+                    ctx.arc(offset + m.x * scale, offset + m.y * scale, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    // 怪物等级指示
+                    ctx.fillStyle = '#000';
+                    ctx.font = '8px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(m.level, offset + m.x * scale, offset + m.y * scale + 3);
+                });
+
+                // 绘制掉落物品
+                (drops || []).forEach(d => {
+                    ctx.fillStyle = '#ffd700';
+                    ctx.beginPath();
+                    ctx.arc(offset + d.x * scale, offset + d.y * scale, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // 绘制玩家
+                if (player) {
+                    ctx.fillStyle = '#00ff00';
+                    ctx.beginPath();
+                    ctx.arc(offset + player.x * scale, offset + player.y * scale, 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    // 玩家等级指示
+                    ctx.fillStyle = '#000';
+                    ctx.font = '8px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(player.level, offset + player.x * scale, offset + player.y * scale + 4);
+                }
+
+                // 小地图边框
+                ctx.strokeStyle = '#8b4513';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(0, 0, 180, 180);
+
+                // 小地图标题
+                ctx.fillStyle = '#ffd700';
+                ctx.font = '10px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText('玛法大陆', 90, 15);
+            }
+
+            render() {
+                // 确保Canvas上下文存在
+                if (!this.ctx || !this.canvas) {
+                    console.error('Canvas或上下文不存在');
+                    return;
+                }
+                
+                // 清空画布
+                this.ctx.fillStyle = '#0a0a0f';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                if (!currentMap || !player) {
+                    console.log('地图或玩家未初始化');
+                    return;
+                }
+
+                // 绘制地图
+                try {
+                    currentMap.draw(this.ctx, this.cameraX, this.cameraY);
+                    console.log('地图绘制完成，怪物数量:', monsters.length);
+                } catch (error) {
+                    console.error('绘制地图时出错:', error);
+                }
+
+                // 确保怪物数组存在
+                if (!monsters) {
+                    monsters = [];
+                    console.log('怪物数组初始化');
+                }
+
+                // 即使图像没有加载完成，也渲染游戏
+                renderList = [
+                    ...monsters.map(m => ({ entity: m, type: 'monster' })),
+                    { entity: player, type: 'player' }
+                ].sort((a, b) => {
+                    return (a.entity.x + a.entity.y) - (b.entity.x + b.entity.y);
+                });
+
+                // 绘制实体
+                renderList.forEach(item => {
+                    try {
+                        this.drawEntity(item.entity, item.type === 'player');
+                    } catch (error) {
+                        console.error('绘制实体时出错:', error);
+                    }
+                });
+
+                // 绘制掉落物品
+                try {
+                    (drops || []).forEach(drop => {
+                        const centerX = this.canvas.width / 2;
+                        const centerY = this.canvas.height / 2;
+                        const pos = currentMap.isoToScreen(drop.x - this.cameraX, drop.y - this.cameraY);
+                        this.ctx.font = '24px Arial';
+                        this.ctx.textAlign = 'center';
+                        this.ctx.fillText(drop.item.icon, centerX + pos.x, centerY + pos.y - 10);
+                    });
+                } catch (error) {
+                    console.error('绘制掉落物品时出错:', error);
+                }
+
+                // 绘制粒子效果
+                try {
+                    this.drawParticles();
+                } catch (error) {
+                    console.error('绘制粒子效果时出错:', error);
+                }
+                
+                // 绘制小地图
+                try {
+                    this.drawMinimap();
+                } catch (error) {
+                    console.error('绘制小地图时出错:', error);
+                }
+                
+                // 显示加载状态（但有超时机制）
+                if (!this.imagesLoaded) {
+                    // 检查是否超时
+                    const currentTime = Date.now();
+                    const elapsedTime = this.loadStartTime > 0 ? currentTime - this.loadStartTime : 0;
+                    
+                    // 直接跳过加载界面，进入游戏
+                    console.log('跳过加载界面，直接进入游戏...');
+                    this.imagesLoaded = true;
+                    this.loadProgress = 100;
+                }
+            }
+
+            update(deltaTime) {
+                if (!player) return;
+
+                this.cameraX = player.x;
+                this.cameraY = player.y;
+
+                player.update(deltaTime);
+                (monsters || []).forEach(m => m.update(deltaTime));
+                this.updateParticles(deltaTime);
+
+                for (let i = (drops || []).length - 1; i >= 0; i--) {
+                    const drop = drops[i];
+                    const dist = Math.sqrt(Math.pow(drop.x - player.x, 2) + Math.pow(drop.y - player.y, 2));
+                    if (dist < 1.5) {
+                        if (drop.item.type === 'gold') {
+                            player.gold += drop.item.value;
+                            addChatMessage(`拾取 ${drop.item.name}，获得 ${drop.item.value} 金币`, 'loot');
+                        } else if (drop.item.type === 'potion') {
+                            if (drop.item.name.includes('金疮')) {
+                                player.heal(30);
+                            }
+                            addChatMessage(`拾取 ${drop.item.name}`, 'loot');
+                        } else if (drop.item.slot) {
+                            player.inventory.push(drop.item);
+                            addChatMessage(`拾取 ${drop.item.name}`, 'loot');
+                        }
+                        drops.splice(i, 1);
+                        updateUI();
+                    }
+                }
+
+                if (!player.isDead && this.selectedMonster && !player.isMoving && monsters && monsters.length > 0) {
+                    // 检查怪物是否仍然存在
+                    if (!monsters.includes(this.selectedMonster)) {
+                        this.selectedMonster = null;
+                    } else {
+                        const dist = Math.sqrt(
+                            Math.pow(this.selectedMonster.x - player.x, 2) +
+                            Math.pow(this.selectedMonster.y - player.y, 2)
+                        );
+                        if (dist <= 2) {
+                            player.attack(this.selectedMonster);
+                        } else {
+                            player.moveTo(this.selectedMonster.x, this.selectedMonster.y);
+                        }
+                    }
+                }
+            }
+
+            gameLoop(timestamp) {
+                const deltaTime = timestamp - this.lastTime;
+                this.lastTime = timestamp;
+
+                this.update(deltaTime);
+                this.render();
+
+                document.getElementById('playerPos').textContent = `${Math.floor(player.x)}, ${Math.floor(player.y)}`;
+                document.getElementById('playerLevel').textContent = player.level;
+
+                requestAnimationFrame((time) => this.gameLoop(time));
+            }
+        }
+
+        // ==================== UI函数 ====================
+        function updateUI() {
+            if (!player) return;
+
+            const hpPercent = (player.hp / player.maxHp) * 100;
+            const mpPercent = (player.mp / player.maxMp) * 100;
+
+            document.getElementById('hpBar').style.width = hpPercent + '%';
+            document.getElementById('mpBar').style.width = mpPercent + '%';
+            document.getElementById('hpText').textContent = `${Math.floor(player.hp)}/${player.maxHp}`;
+            document.getElementById('mpText').textContent = `${Math.floor(player.mp)}/${player.maxMp}`;
+
+            document.getElementById('statusName').textContent = player.name;
+            document.getElementById('statusProf').textContent = CONFIG.PROFESSIONS[player.profession].name;
+            document.getElementById('statusLevel').textContent = player.level;
+            document.getElementById('statusHP').textContent = `${Math.floor(player.hp)}/${player.maxHp}`;
+            document.getElementById('statusMP').textContent = `${Math.floor(player.mp)}/${player.maxMp}`;
+            document.getElementById('statusEXP').textContent = `${player.exp}/${player.maxExp}`;
+            document.getElementById('statusATK').textContent = `${player.minAtk}-${player.maxAtk}`;
+            document.getElementById('statusMATK').textContent = `${player.minMAtk}-${player.maxMAtk}`;
+            document.getElementById('statusDEF').textContent = `${player.minDef}-${player.maxDef}`;
+            document.getElementById('statusMDEF').textContent = `${player.minMDef}-${player.maxMDef}`;
+            document.getElementById('statusACC').textContent = player.acc;
+            document.getElementById('statusAGI').textContent = player.agi;
+
+            document.getElementById('equipCharName').textContent = player.name;
+            document.getElementById('equipCharLevel').textContent = `Lv.${player.level} ${CONFIG.PROFESSIONS[player.profession].name}`;
+            // 使用 img 标签显示职业图标
+            const equipCharIcon = document.getElementById('equipCharIcon');
+            if (equipCharIcon.tagName === 'IMG') {
+                equipCharIcon.src = CONFIG.PROFESSIONS[player.profession].icon;
+            } else {
+                // 如果不是 img 标签，创建一个新的 img 标签替换它
+                const img = document.createElement('img');
+                img.id = 'equipCharIcon';
+                img.src = CONFIG.PROFESSIONS[player.profession].icon;
+                img.style.width = '64px';
+                img.style.height = '64px';
+                img.style.borderRadius = '8px';
+                equipCharIcon.parentNode.replaceChild(img, equipCharIcon);
+            }
+        }
+
+        function addChatMessage(text, type = 'normal') {
+            const container = document.getElementById('chatMessages');
+            const msg = document.createElement('div');
+            msg.className = `chat-message ${type}`;
+            msg.textContent = text;
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function sendChat() {
+            const input = document.getElementById('chatInput');
+            if (input.value.trim()) {
+                addChatMessage(`${player.name}: ${input.value}`, 'normal');
+                input.value = '';
+            }
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+            if (id === 'equipmentModal') {
+                updateUI();
+            } else if (id === 'statusModal') {
+                updateUI();
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal(modal.id);
+                }
+            });
+        });
+
+        document.getElementById('chatInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                sendChat();
+            }
+        });
+    </script>
+</body>
+</html>
